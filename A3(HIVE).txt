@@ -1,0 +1,201 @@
+Write an application using HiveQL for flight information system which will include
+a. Creating , Dropping, and altering Database tables.
+b. Creating an external Hive table.
+c. Load table with data, insert new values and field in the table, Join tables with Hive
+d. Create index on Flight Information Table
+e. Find the average departure delay per day in 2008.
+
+
+
+A. Creating database
+	Hive>CREATE DATABASE ourfirstdatabase;
+	Hive> USE ourfirstdatabase; 
+
+Crete a table
+	hive >CREATE TABLE our_first_table
+	(	
+	FirstName STRING,
+	LastName STRING,
+	EmployeeId INT
+	);
+
+[1]  Create Flight Information 2007 Table :
+
+CREATE TABLE IF NOT EXISTS FlightInfo2007
+(
+Year SMALLINT,
+ Month TINYINT, 
+DayofMonth TINYINT,
+DayOfWeek TINYINT,
+DepTime SMALLINT,
+CRSDepTime SMALLINT,
+ArrTime SMALLINT,
+CRSArrTime SMALLINT,
+UniqueCarrier STRING,
+FlightNum STRING,
+TailNum STRING,
+ActualElapsedTime SMALLINT,
+CRSElapsedTime SMALLINT,
+AirTime SMALLINT,
+ArrDelay SMALLINT,
+DepDelay SMALLINT ,
+Origin STRING,
+Dest STRING,
+Distance INT,
+TaxiIn SMALLINT,
+TaxiOut SMALLINT,
+Cancelled SMALLINT,
+CancellationCode STRING,
+Diverted SMALLINT,
+CarrierDelay SMALLINT,
+WeatherDelay SMALLINT,
+NASDelay SMALLINT,
+SecurityDelay SMALLINT,
+LateAircraftDelay SMALLINT
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n' 
+STORED AS TEXTFILE;
+
+
+
+
+[2] Load Flight information data from 2007.csv file:
+ hive> load data local inpath '/home/hduser/Desktop/2007.csv' into table FlightInfo2007;
+
+[3] Create FlightInfo2008 tabke. use create table ...  command or create table frrom FlightInfo2007 as:
+hive> CREATE TABLE IF NOT EXISTS FlightInfo2008 LIKE FlightInfo2007;
+
+[4] Load Flight information data from 2008.csv file into table FlightInfo2008
+hive> load data local inpath '/home/hduser/Desktop/2008.csv' into table FlightInfo2008;
+
+[5]create myflightinfo2007 table to store Year, Month, DepTime, ArrTime, FlightNum,
+ Origin, Dest data from FlightInfo2007 table month 7 (July) and 3 ( March)
+
+
+hive> CREATE TABLE myflightinfo2007 AS 
+ SELECT Year, Month, DepTime, ArrTime, FlightNum,
+ Origin, Dest FROM FlightInfo2007
+ WHERE (Month = 7 AND DayofMonth = 3) AND
+ (Origin='JFK' AND Dest='ORD');
+
+[6] Write query to dispay flight information   as :Year, Month, DepTime, ArrTime, FlightNum,
+ Origin, Dest  in year 2007.
+hive>SELECT * FROM myFlightInfo2007;
+
+[7] create myflightinfo2007 table to store Year, Month, DepTime, ArrTime, FlightNum,
+ Origin, Dest data from FlightInfo2008 table for month 7 (July) and 3 ( March)
+
+CREATE TABLE myFlightInfo2008 AS
+SELECT Year, Month, DepTime, ArrTime, FlightNum,
+Origin, Dest FROM FlightInfo2008
+WHERE (Month = 7 AND DayofMonth = 3) AND
+(Origin='JFK' AND Dest='ORD');
+
+[8] Write query to dispay flight information   as :Year, Month, DepTime, ArrTime, FlightNum,
+ Origin, Dest  in year 2008.
+
+hive> SELECT * FROM myFlightInfo2008;
+
+
+ JOIN Operation on Hive tables:
+
+[9] Write query to dispay flight information   as :Year, Month, DepTime, ArrTime, FlightNum,
+ Origin, Dest  in year 2007 and 2008
+
+Hive>SELECT m8.Year, m8.Month, m8.FlightNum, m8.Origin, m8.Dest, m7.Year, m7.Month,
+m7.FlightNum, m7.Origin, m7.Dest
+FROM myFlightinfo2008 m8 JOIN myFlightinfo2007 m7 ON
+m8.FlightNum=m7.FlightNum;
+
+hive> SELECT m8.FlightNum,m8.Origin,m8.Dest,m7.FlightNum,m7.Origin,m7.Dest
+FROM myFlightinfo2008 m8 FULL OUTER JOIN myFlightinfo2007 m7
+ON m8.FlightNum = m7.FlightNum;
+
+
+hive>SELECT m8.Year, m8.Month, m8.FlightNum, m8.Origin, m8.Dest, m7.Year, m7.Month,
+m7.FlightNum, m7.Origin, m7.Dest
+FROM myFlightinfo2008 m8 LEFT OUTER JOIN myFlightinfo2007 m7
+ON m8.FlightNum=m7.FlightNum;
+
+[10] Create index on origin field
+hive> CREATE INDEX f08_index ON TABLE flightinfo2008 (Origin) AS
+'COMPACT' WITH DEFERRED REBUILD;
+
+hive> ALTER INDEX f08_index ON flightinfo2008 REBUILD;
+hive>SHOW INDEXES ON FlightInfo2008;
+
+
+[11] Find average deparature delay for flights in year 2008
+hive> CREATE VIEW avgdepdelay AS
+> SELECT DayOfWeek, AVG(DepDelay) 
+FROM  FlightInfo2008
+ GROUP BY DayOfWeek;
+
+hive> SELECT * FROM avgdepdelay;
+
+
+
+OR
+
+hive>  SELECT DayOfWeek, AVG(DepDelay) 
+FROM  FlightInfo2008
+ GROUP BY DayOfWeek;
+
+
+
+HBASE:
+
+[1]  Create CustomerInformation Table with two column familty 1) Customer Name and  Contact Info
+hbase> create 'CustomerInformation','ContactInfo','CustomerName'
+
+[2] Display List of all tables in HBASE
+hbase> list
+
+[3] Insert customer name  Data to CustomerInformation table:  ( e.g : Ajay Balaji Shinde )
+
+hbase> put 'CustomerInformation',1,'CustomerName:FN',' Ajay '
+hbase(main):005:0> put 'CustomerInformation',1,'CustomerName:MN','Balaji'
+hbase(main):006:0> put 'CustomerInformation',1,'CustomerName:LN','Shinde'
+
+[4] Insert contact information ,email,  of customer Ajay Balaji Shinde :
+hbase> put 'CustomerInformation',1,'ContactInfo:EA',?ajay@gmail.com?
+
+
+[5] Insert customer name  Data to CustomerInformation table:  ( e.g : Ajay Balaji Shinde )
+
+hbase> put 'CustomerInformation',1,'CustomerName:FN',' Nitin '
+hbase(main):005:0> put 'CustomerInformation',1,'CustomerName:MN','P'
+hbase(main):006:0> put 'CustomerInformation',1,'CustomerName:LN','Deshpande'
+
+[6] Insert contact information ,email,  of customer Nitin P Deshpande :
+hbase> put 'CustomerInformation', 1,  'ContactInfo:EA', 'nitin@xyz.com'
+
+[7] Display CustomerInformation data from CustomerInformation table:
+hbase> scan 'CustomerInformation'
+
+
+HIVE & HBASE integration: 
+Access CustomerInformation in Hbase table from Hive 
+
+[1]  create a hive external table 
+
+hive> CREATE EXTERNAL TABLE hive_hbase_table (
+ key INT,
+ name map<STRING,STRING>,
+ info map<STRING, STRING>)
+ STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'
+ WITH SERDEPROPERTIES ("hbase.columns.mapping" =   ": key, CustomerName:, ContactInfo:")
+ TBLPROPERTIES ("hbase.table.name" = "CustomerInformation");
+
+[2]  Display customer information
+
+hive> SELECT * FROM hive_hbase_table;
+
+
+
+
+
+
+
